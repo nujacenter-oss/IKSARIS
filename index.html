@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Pendataan Alumni Pondok Pesantren</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            min-height: 80vh;
+        }
+
+        /* Slide Gambar */
+        .slide-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* User Info */
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ecf0f1;
+            padding: 12px 15px;
+            margin: 10px;
+            border-radius: 12px;
+        }
+
+        .user-name {
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Menu */
+        .content {
+            padding: 15px;
+        }
+
+        .waka-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .waka-btn {
+            flex: 1;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .waka-btn:nth-child(2) { background: #e67e22; }
+        .waka-btn:nth-child(3) { background: #2ecc71; }
+        .waka-btn:active { transform: scale(0.97); }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .menu-btn:active { transform: scale(0.97); }
+        .menu-btn.full-width { grid-column: 1 / -1; }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Tabel Data */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .foto-preview {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 300px;
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .popup-box button {
+            margin-top: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app"></div>
+
+    <script src="https://accounts.google.com/gsi/client" async></script>
+    <script>
+        // ======================= KONFIGURASI =======================
+        // 🔴 GANTI dengan Client ID Google Anda (dari Google Cloud Console)
+        const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+        
+        // 🔴 GANTI dengan URL Apps Script Anda (setelah deploy)
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+        
+        // Data user
+        let currentUser = null;
+        let currentView = 'login';
+        let currentData = [];
+        let currentWaka = '';
+        
+        // ======================= GOOGLE LOGIN =======================
+        function initGoogleLogin() {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredential
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("googleBtn"),
+                { theme: "outline", size: "large", width: "100%" }
+            );
+        }
+        
+        function handleGoogleCredential(response) {
+            const payload = parseJwt(response.credential);
+            currentUser = {
+                name: payload.name,
+                email: payload.email,
+                picture: payload.picture
+            };
+            currentView = 'menu';
+            render();
+        }
+        
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+        
+        // ======================= API KE SPREADSHEET =======================
+        async function getDataByWaka(waka) {
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getData&waka=${encodeURIComponent(waka)}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error('Gagal fetch data');
+            } catch (error) {
+                console.error(error);
+                return []; // return empty jika error
+            }
+        }
+        
+        async function saveAlumni(data) {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // untuk menghindari CORS
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'addAlumni', ...data })
+                });
+                return { success: true };
+            } catch (error) {
+                console.error(error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function requestKTA(nik) {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'requestKTA', nik })
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    return result;
+                }
+                return { success: false };
+            } catch (error) {
+                return { success: false };
+            }
+        }
+        
+        function uploadFoto(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // ======================= RENDER VIEW =======================
+        function render() {
+            const app = document.getElementById('app');
+            if (!app) return;
+            
+            if (currentView === 'login') {
+                app.innerHTML = renderLogin();
+                if (document.getElementById("googleBtn")) initGoogleLogin();
+            } else if (currentView === 'menu') {
+                app.innerHTML = renderMenu();
+                attachMenuEvents();
+            } else if (currentView === 'data') {
+                app.innerHTML = renderDataTable();
+                attachDataEvents();
+            } else if (currentView === 'registrasi') {
+                app.innerHTML = renderRegistrasi();
+                attachRegistrasiEvents();
+            } else if (currentView === 'kta') {
+                app.innerHTML = renderKTA();
+                attachKTAEvents();
+            }
+        }
+        
+        function renderLogin() {
+            return `
+                <div class="slide-container">
+                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren">
+                </div>
+                <div class="header">
+                    <h1>🌙 Alumni Ponpes</h1>
+                    <p>Sistem Pendataan Alumni</p>
+                </div>
+                <div class="content" style="text-align: center;">
+                    <div id="googleBtn"></div>
+                    <p style="margin-top: 20px; font-size: 0.8rem;">Login dengan akun Google Anda</p>
+                </div>
+            `;
+        }
+        
+        function renderMenu() {
+            return `
+                <div class="slide-container">
+                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren">
+                </div>
+                <div class="user-info">
+                    <div class="user-name">
+                        <img class="user-avatar" src="${currentUser?.picture || 'https://via.placeholder.com/35'}" alt="avatar">
+                        <span>${currentUser?.name || 'Alumni'}</span>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+                <div class="content">
+                    <div class="waka-buttons">
+                        <button class="waka-btn" data-waka="Waka Huda">Waka Huda</button>
+                        <button class="waka-btn" data-waka="Waka Oke">Waka Oke</button>
+                        <button class="waka-btn" data-waka="Waka Bus">Waka Bus</button>
+                    </div>
+                    <div class="menu-grid">
+                        <button id="registrasiBtn" class="menu-btn">📝 Registrasi Alumni</button>
+                        <button id="ktaBtn" class="menu-btn">💳 Buat KTA</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderDataTable() {
+            let tableHtml = `
+                <div class="header">
+                    <h1>📊 Data ${currentWaka}</h1>
+                </div>
+                <div class="content">
+                    <button id="backBtn" class="back-btn">← Kembali ke Menu</button>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>NIK</th><th>Nama</th><th>JK</th><th>Tempat Lahir</th><th>Korda</th><th>Alamat</th><th>Thn Masuk</th><th>Thn Keluar</th><th>Foto</th></tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            if (currentData.length === 0) {
+                tableHtml += '<tr><td colspan="9" style="text-align:center;">Tidak ada data</td></tr>';
+            } else {
+                currentData.forEach(item => {
+                    tableHtml += `
+                        <tr>
+                            <td>${item.NIK || '-'}</td>
+                            <td>${item.NamaLengkap || '-'}</td>
+                            <td>${item.JenisKelamin || '-'}</td>
+                            <td>${item.TempatLahir || '-'}</td>
+                            <td>${item.Korda || '-'}</td>
+                            <td>${item.Desa || ''} ${item.Kecamatan || ''} ${item.Kabupaten || ''}</td>
+                            <td>${item.TahunMasuk || '-'}</td>
+                            <td>${item.TahunKeluar || '-'}</td>
+                            <td><img class="foto-preview" src="${item.FotoLink || 'https://via.placeholder.com/50'}" onerror="this.src='https://via.placeholder.com/50'"></td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            tableHtml += `</tbody></table></div></div>`;
+            return tableHtml;
+        }
+        
+        function renderRegistrasi() {
+            return `
+                <div class="header">
+                    <h1>📝 Registrasi Alumni</h1>
+                </div>
+                <div class="content">
+                    <button id="backBtn" class="back-btn">← Kembali</button>
+                    <form id="registrasiForm">
+                        <div class="form-group"><label>Pilihan Pondok</label><select id="namaPondok"><option>PPRS</option><option>PPRM</option></select></div>
+                        <div class="form-group"><label>NIK (Unik)</label><input id="nik" required></div>
+                        <div class="form-group"><label>Nama Lengkap</label><input id="namaLengkap" required></div>
+                        <div class="form-group"><label>Jenis Kelamin</label><select id="jenisKelamin"><option>L</option><option>P</option></select></div>
+                        <div class="form-group"><label>Tempat Lahir</label><input id="tempatLahir"></div>
+                        <div class="form-group"><label>Tanggal Lahir</label><input type="date" id="tanggalLahir"></div>
+                        <div class="form-group"><label>Korda</label><input id="korda"></div>
+                        <div class="form-group"><label>Desa</label><input id="desa"></div>
+                        <div class="form-group"><label>Kecamatan</label><input id="kecamatan"></div>
+                        <div class="form-group"><label>Kabupaten</label><input id="kabupaten"></div>
+                        <div class="form-group"><label>Tahun Masuk</label><input type="number" id="tahunMasuk"></div>
+                        <div class="form-group"><label>Tahun Keluar</label><input type="number" id="tahunKeluar"></div>
+                        <div class="form-group">
+                            <label>Upload Foto</label>
+                            <div class="upload-area" id="uploadArea">
+                                <p>📸 Klik untuk upload foto</p>
+                                <input type="file" id="fotoFile" accept="image/*">
+                            </div>
+                            <img id="fotoPreview" style="width:80px; margin-top:8px; display:none; border-radius:10px;">
+                        </div>
+                        <button type="submit" class="menu-btn full-width">Simpan Data</button>
+                    </form>
+                </div>
+            `;
+        }
+        
+        function renderKTA() {
+            return `
+                <div class="header">
+                    <h1>💳 Buat KTA</h1>
+                </div>
+                <div class="content">
+                    <button id="backBtn" class="back-btn">← Kembali</button>
+                    <div class="form-group"><label>Masukkan NIK</label><input id="nikKTA" placeholder="Contoh: 001"></div>
+                    <button id="kirimKTA" class="menu-btn full-width">Kirim Permintaan</button>
+                </div>
+            `;
+        }
+        
+        // ======================= EVENT HANDLERS =======================
+        function attachMenuEvents() {
+            document.querySelectorAll('.waka-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    currentWaka = btn.dataset.waka;
+                    currentData = await getDataByWaka(currentWaka);
+                    currentView = 'data';
+                    render();
+                });
+            });
+            document.getElementById('registrasiBtn')?.addEventListener('click', () => { currentView = 'registrasi'; render(); });
+            document.getElementById('ktaBtn')?.addEventListener('click', () => { currentView = 'kta'; render(); });
+            document.getElementById('logoutBtn')?.addEventListener('click', () => { currentUser = null; currentView = 'login'; render(); });
+        }
+        
+        function attachDataEvents() {
+            document.getElementById('backBtn')?.addEventListener('click', () => { currentView = 'menu'; render(); });
+        }
+        
+        function attachRegistrasiEvents() {
+            document.getElementById('backBtn')?.addEventListener('click', () => { currentView = 'menu'; render(); });
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fotoFile');
+            if (uploadArea) {
+                uploadArea.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            const preview = document.getElementById('fotoPreview');
+                            preview.src = ev.target.result;
+                            preview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            
+            document.getElementById('registrasiForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                let fotoBase64 = '';
+                const fotoFile = document.getElementById('fotoFile').files[0];
+                if (fotoFile) fotoBase64 = await uploadFoto(fotoFile);
+                
+                const data = {
+                    NIK: document.getElementById('nik').value,
+                    namaLengkap: document.getElementById('namaLengkap').value,
+                    jenisKelamin: document.getElementById('jenisKelamin').value,
+                    tempatLahir: document.getElementById('tempatLahir').value,
+                    tanggalLahir: document.getElementById('tanggalLahir').value,
+                    korda: document.getElementById('korda').value,
+                    desa: document.getElementById('desa').value,
+                    kecamatan: document.getElementById('kecamatan').value,
+                    kabupaten: document.getElementById('kabupaten').value,
+                    tahunMasuk: document.getElementById('tahunMasuk').value,
+                    tahunKeluar: document.getElementById('tahunKeluar').value,
+                    fotoLink: fotoBase64,
+                    namaPondok: document.getElementById('namaPondok').value,
+                    email: currentUser?.email
+                };
+                const result = await saveAlumni(data);
+                alert(result.success ? '✅ Data tersimpan!' : '❌ Gagal simpan');
+                if (result.success) { currentView = 'menu'; render(); }
+            });
+        }
+        
+        function attachKTAEvents() {
+            document.getElementById('backBtn')?.addEventListener('click', () => { currentView = 'menu'; render(); });
+            document.getElementById('kirimKTA')?.addEventListener('click', async () => {
+                const nik = document.getElementById('nikKTA').value;
+                if (!nik) return alert('Masukkan NIK!');
+                const result = await requestKTA(nik);
+                if (result.success) showPopup('📧 Data anda sedang diproses, mohon tunggu 3 hari kerja. Link KTA dikirim ke email Anda.');
+                else alert('❌ NIK tidak ditemukan!');
+            });
+        }
+        
+        function showPopup(msg) {
+            const popup = document.createElement('div');
+            popup.className = 'popup-overlay';
+            popup.innerHTML = `<div class="popup-box"><p>${msg}</p><button onclick="this.closest('.popup-overlay').remove()">OK</button></div>`;
+            document.body.appendChild(popup);
+        }
+        
+        render();
+    </script>
+</body>
+</html>
