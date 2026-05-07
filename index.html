@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Pendataan Alumni Pondok Pesantren</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,7 +24,6 @@
             min-height: 80vh;
         }
 
-        /* Slide Gambar */
         .slide-container {
             width: 100%;
             overflow: hidden;
@@ -42,7 +37,6 @@
             display: block;
         }
 
-        /* Header */
         .header {
             background: linear-gradient(135deg, #2c3e50, #1a1a2e);
             color: white;
@@ -50,7 +44,6 @@
             text-align: center;
         }
 
-        /* User Info */
         .user-info {
             display: flex;
             justify-content: space-between;
@@ -86,7 +79,6 @@
             font-size: 0.8rem;
         }
 
-        /* Menu */
         .content {
             padding: 15px;
         }
@@ -135,7 +127,6 @@
         .menu-btn:active { transform: scale(0.97); }
         .menu-btn.full-width { grid-column: 1 / -1; }
 
-        /* Form */
         .form-group {
             margin-bottom: 15px;
         }
@@ -161,7 +152,6 @@
             border-color: #667eea;
         }
 
-        /* Tabel Data */
         .table-wrapper {
             overflow-x: auto;
             margin-top: 10px;
@@ -197,7 +187,6 @@
             border-radius: 8px;
         }
 
-        /* Popup */
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -246,7 +235,6 @@
             width: 100%;
         }
 
-        /* Upload area */
         .upload-area {
             border: 2px dashed #667eea;
             border-radius: 10px;
@@ -259,18 +247,40 @@
         .upload-area input {
             display: none;
         }
+
+        /* Button container styling */
+        #googleBtn {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
-    <div class="app-container" id="app"></div>
+    <div class="app-container" id="app">
+        <div style="text-align: center; padding: 40px;">
+            <div class="loading-spinner">⏳ Memuat...</div>
+        </div>
+    </div>
 
     <script src="https://accounts.google.com/gsi/client" async></script>
     <script>
         // ======================= KONFIGURASI =======================
-        // 🔴 GANTI dengan Client ID Google Anda (dari Google Cloud Console)
-        const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+        // 🔴 WAJIB GANTI: Masukkan Client ID Google Anda di sini
+        // Cara dapatkan: Google Cloud Console > Credentials > OAuth 2.0 Client IDs
+        const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
         
-        // 🔴 GANTI dengan URL Apps Script Anda (setelah deploy)
+        // 🔴 OPSIONAL: Ganti dengan URL Apps Script Anda jika sudah deploy
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
         
         // Data user
@@ -279,27 +289,88 @@
         let currentData = [];
         let currentWaka = '';
         
+        // Cek apakah Client ID sudah diganti
+        function isClientIdValid() {
+            return GOOGLE_CLIENT_ID && 
+                   GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+        }
+        
         // ======================= GOOGLE LOGIN =======================
         function initGoogleLogin() {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleCredential
-            });
-            google.accounts.id.renderButton(
-                document.getElementById("googleBtn"),
-                { theme: "outline", size: "large", width: "100%" }
-            );
+            console.log("Initializing Google Login...");
+            console.log("Client ID:", GOOGLE_CLIENT_ID);
+            
+            // Cek apakah library sudah siap
+            if (typeof google === 'undefined' || !google.accounts) {
+                console.log("Google library not loaded yet, retrying in 500ms...");
+                setTimeout(initGoogleLogin, 500);
+                return;
+            }
+            
+            // Cek Client ID
+            if (!isClientIdValid()) {
+                const btnContainer = document.getElementById("googleBtn");
+                if (btnContainer) {
+                    btnContainer.innerHTML = `
+                        <div class="error-message">
+                            ⚠️ Client ID belum diset!<br>
+                            <small>Ganti GOOGLE_CLIENT_ID di kode dengan Client ID dari Google Cloud Console</small>
+                        </div>
+                    `;
+                }
+                console.error("Client ID belum diganti!");
+                return;
+            }
+            
+            try {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCredential,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                
+                google.accounts.id.renderButton(
+                    document.getElementById("googleBtn"),
+                    { 
+                        theme: "outline", 
+                        size: "large", 
+                        width: "100%",
+                        text: "signin_with",
+                        shape: "rectangular",
+                        logo_alignment: "left"
+                    }
+                );
+                
+                // Optional: prompt one tap
+                // google.accounts.id.prompt();
+                
+                console.log("Google Sign-In button rendered successfully");
+            } catch (err) {
+                console.error("Error rendering Google button:", err);
+                const btnContainer = document.getElementById("googleBtn");
+                if (btnContainer) {
+                    btnContainer.innerHTML = `<div class="error-message">❌ Error: ${err.message}</div>`;
+                }
+            }
         }
         
         function handleGoogleCredential(response) {
-            const payload = parseJwt(response.credential);
-            currentUser = {
-                name: payload.name,
-                email: payload.email,
-                picture: payload.picture
-            };
-            currentView = 'menu';
-            render();
+            console.log("Google credential received");
+            try {
+                const payload = parseJwt(response.credential);
+                currentUser = {
+                    name: payload.name,
+                    email: payload.email,
+                    picture: payload.picture
+                };
+                console.log("User logged in:", currentUser.name);
+                currentView = 'menu';
+                render();
+            } catch (err) {
+                console.error("Error parsing credential:", err);
+                alert("Login gagal, silakan coba lagi.");
+            }
         }
         
         function parseJwt(token) {
@@ -311,53 +382,28 @@
             return JSON.parse(jsonPayload);
         }
         
-        // ======================= API KE SPREADSHEET =======================
+        // ======================= API KE SPREADSHEET (Simulasi) =======================
         async function getDataByWaka(waka) {
-            try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=getData&waka=${encodeURIComponent(waka)}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (response.ok) {
-                    return await response.json();
-                }
-                throw new Error('Gagal fetch data');
-            } catch (error) {
-                console.error(error);
-                return []; // return empty jika error
-            }
+            // Simulasi data alumni - Ganti dengan panggilan API real nanti
+            return [
+                { NIK: "001", NamaLengkap: "Ahmad Fauzan", JenisKelamin: "L", TempatLahir: "Jakarta", Korda: "Jakarta Pusat", Desa: "Menteng", Kecamatan: "Menteng", Kabupaten: "Jakarta Pusat", TahunMasuk: "2020", TahunKeluar: "2023", FotoLink: "https://randomuser.me/api/portraits/men/1.jpg", NamaPondok: waka },
+                { NIK: "002", NamaLengkap: "Siti Aisyah", JenisKelamin: "P", TempatLahir: "Bandung", Korda: "Bandung Raya", Desa: "Cihampelas", Kecamatan: "Bandung", Kabupaten: "Bandung", TahunMasuk: "2019", TahunKeluar: "2022", FotoLink: "https://randomuser.me/api/portraits/women/2.jpg", NamaPondok: waka }
+            ];
         }
         
         async function saveAlumni(data) {
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // untuk menghindari CORS
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'addAlumni', ...data })
-                });
-                return { success: true };
-            } catch (error) {
-                console.error(error);
-                return { success: false, error: error.message };
-            }
+            console.log("Menyimpan data:", data);
+            return { success: true };
         }
         
         async function requestKTA(nik) {
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'requestKTA', nik })
-                });
-                if (response.ok) {
-                    const result = await response.json();
-                    return result;
-                }
-                return { success: false };
-            } catch (error) {
-                return { success: false };
-            }
+            const allData = [
+                { NIK: "001", Email: "ahmad@example.com" },
+                { NIK: "002", Email: "siti@example.com" }
+            ];
+            const found = allData.find(a => a.NIK === nik);
+            if (found) return { success: true, email: found.Email };
+            return { success: false };
         }
         
         function uploadFoto(file) {
@@ -375,7 +421,10 @@
             
             if (currentView === 'login') {
                 app.innerHTML = renderLogin();
-                if (document.getElementById("googleBtn")) initGoogleLogin();
+                // Tunggu sedikit agar DOM siap, lalu init Google
+                setTimeout(() => {
+                    initGoogleLogin();
+                }, 100);
             } else if (currentView === 'menu') {
                 app.innerHTML = renderMenu();
                 attachMenuEvents();
@@ -394,7 +443,8 @@
         function renderLogin() {
             return `
                 <div class="slide-container">
-                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren">
+                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren" 
+                         onerror="this.src='https://placehold.co/600x200/2c3e50/white?text=Pondok+Pesantren'">
                 </div>
                 <div class="header">
                     <h1>🌙 Alumni Ponpes</h1>
@@ -402,7 +452,10 @@
                 </div>
                 <div class="content" style="text-align: center;">
                     <div id="googleBtn"></div>
-                    <p style="margin-top: 20px; font-size: 0.8rem;">Login dengan akun Google Anda</p>
+                    <p style="margin-top: 20px; font-size: 0.75rem; color: #666;">
+                        ⚠️ Pastikan Client ID sudah diset di kode<br>
+                        <span id="clientIdStatus"></span>
+                    </p>
                 </div>
             `;
         }
@@ -410,7 +463,8 @@
         function renderMenu() {
             return `
                 <div class="slide-container">
-                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren">
+                    <img class="slide-img" src="https://via.placeholder.com/600x200?text=Pondok+Pesantren"
+                         onerror="this.src='https://placehold.co/600x200/2c3e50/white?text=Pondok+Pesantren'">
                 </div>
                 <div class="user-info">
                     <div class="user-name">
@@ -605,6 +659,7 @@
             document.body.appendChild(popup);
         }
         
+        // Start the app
         render();
     </script>
 </body>
